@@ -28,9 +28,9 @@ class EmailLoader(BaseLoader):
         search_criteria: Optional[str] = field(default=None, kw_only=True)
         max_count: Optional[int] = field(default=None, kw_only=True)
 
-    imap_url: str = field(kw_only=True)
-    username: str = field(kw_only=True)
-    password: str = field(kw_only=True)
+    imap_url: str = field(kw_only=True, default=None)
+    username: str = field(kw_only=True, default=None)
+    password: str = field(kw_only=True, default=None)
 
     def load(self, source: EmailQuery, *args, **kwargs) -> ListArtifact:
         label, key, search_criteria, max_count = astuple(source)
