@@ -33,7 +33,6 @@ class EmailLoader(BaseLoader):
     password: str = field(kw_only=True)
 
     def load(self, source: EmailQuery, *args, **kwargs) -> ListArtifact:
-        mailparser = import_optional_dependency("mailparser")
         label, key, search_criteria, max_count = astuple(source)
 
         artifacts = []
@@ -59,16 +58,31 @@ class EmailLoader(BaseLoader):
                 if data is None or not data or data[0] is None:
                     continue
 
-                message = mailparser.parse_from_bytes(data[0][1])
-
-                # Note: mailparser only populates the text_plain field
-                # if the message content type is explicitly set to 'text/plain'.
-                if message.text_plain:
-                    artifacts.append(TextArtifact("\n".join(message.text_plain)))
+                artifacts.append(
+                    self.load_from_bytes(
+                        data[0][1],
+                        *args,
+                        **kwargs,
+                    )
+                )
 
             client.close()
 
             return ListArtifact(artifacts)
+
+    def load_from_bytes(self, source: bytes | int, *args, **kwargs) -> ListArtifact:
+        mailparser = import_optional_dependency("mailparser")
+
+        email = mailparser.parse_from_bytes(source)
+        body = []
+        if email.text_plain:
+            body.append(email.text_plain)
+        elif email.text_html:
+            body.append(email.text_html)
+        elif email.text_not_managed:
+            body.append(email.text_not_managed)
+
+        return ListArtifact([TextArtifact("\n".join(body))])
 
     def _count_messages(self, message_numbers: bytes) -> int:
         return len(list(filter(None, message_numbers.decode().split(" "))))
