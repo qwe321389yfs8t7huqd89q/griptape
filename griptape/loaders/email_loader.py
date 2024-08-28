@@ -35,7 +35,7 @@ class EmailLoader(BaseLoader):
     def load(self, source: EmailQuery, *args, **kwargs) -> ListArtifact:
         label, key, search_criteria, max_count = astuple(source)
 
-        artifacts = []
+        list_artifact = None
         with imaplib.IMAP4_SSL(self.imap_url) as client:
             client.login(self.username, self.password)
 
@@ -58,17 +58,15 @@ class EmailLoader(BaseLoader):
                 if data is None or not data or data[0] is None:
                     continue
 
-                artifacts.append(
-                    self.load_from_bytes(
-                        data[0][1],
-                        *args,
-                        **kwargs,
-                    )
+                list_artifact = self.load_from_bytes(
+                    data[0][1],
+                    *args,
+                    **kwargs,
                 )
 
             client.close()
 
-            return ListArtifact(artifacts)
+            return list_artifact if list_artifact else ListArtifact([])
 
     def load_from_bytes(self, source: bytes | int, *args, **kwargs) -> ListArtifact:
         mailparser = import_optional_dependency("mailparser")
