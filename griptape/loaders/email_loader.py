@@ -32,7 +32,7 @@ class EmailLoader(BaseLoader):
     username: str = field(kw_only=True, default=None)
     password: str = field(kw_only=True, default=None)
 
-    def load(self, source: EmailQuery, *args, **kwargs) -> ListArtifact:
+    def load_from_query(self, source: EmailQuery, *args, **kwargs) -> ListArtifact:
         label, key, search_criteria, max_count = astuple(source)
 
         list_artifact = None
@@ -68,7 +68,7 @@ class EmailLoader(BaseLoader):
 
             return list_artifact if list_artifact else ListArtifact([])
 
-    def load_from_bytes(self, source: bytes | int, *args, **kwargs) -> ListArtifact:
+    def load(self, source: bytes | int, *args, **kwargs) -> ListArtifact:
         mailparser = import_optional_dependency("mailparser")
 
         email = mailparser.parse_from_bytes(source)
