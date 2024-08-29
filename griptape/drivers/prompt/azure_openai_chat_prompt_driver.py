@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Callable, Optional, Union
 
 import openai
 from attrs import Factory, define, field
@@ -29,7 +29,7 @@ class AzureOpenAiChatPromptDriver(OpenAiChatPromptDriver):
         default=Factory(lambda self: self.model, takes_self=True),
         metadata={"serializable": True},
     )
-    azure_endpoint: str = field(kw_only=True, metadata={"serializable": True})
+    azure_endpoint: str = field(default=None, kw_only=True, metadata={"serializable": True})
     azure_ad_token: Optional[str] = field(kw_only=True, default=None, metadata={"serializable": False})
     azure_ad_token_provider: Optional[Callable[[], str]] = field(
         kw_only=True,
@@ -37,9 +37,19 @@ class AzureOpenAiChatPromptDriver(OpenAiChatPromptDriver):
         metadata={"serializable": False},
     )
     api_version: str = field(default="2023-05-15", kw_only=True, metadata={"serializable": True})
-    client: openai.AzureOpenAI = field(
-        default=Factory(
-            lambda self: openai.AzureOpenAI(
+    client: openai.AzureOpenAI = field(default=Factory(lambda self: self._client_factory(), takes_self=True), kw_only=True)
+
+    def _required_client_parameters(self) -> list[Union[str, tuple[str]]]:
+        return [
+            "azure_deployment",
+            "azure_endpoint",
+            ("api_key", "azure_ad_token", "azure_ad_token_provider"),
+            "api_version",
+        ]
+
+    def _build_client(self) -> openai.AzureOpenAI:
+        return (
+            openai.AzureOpenAI(
                 organization=self.organization,
                 api_key=self.api_key,
                 api_version=self.api_version,
@@ -48,9 +58,7 @@ class AzureOpenAiChatPromptDriver(OpenAiChatPromptDriver):
                 azure_ad_token=self.azure_ad_token,
                 azure_ad_token_provider=self.azure_ad_token_provider,
             ),
-            takes_self=True,
-        ),
-    )
+        )
 
     def _base_params(self, prompt_stack: PromptStack) -> dict:
         params = super()._base_params(prompt_stack)

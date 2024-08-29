@@ -23,6 +23,7 @@ from griptape.common import (
     ToolAction,
     observable,
 )
+from griptape.mixins.client_mixin import ClientMixin
 from griptape.drivers import BasePromptDriver
 from griptape.tokenizers import BaseTokenizer, OpenAiTokenizer
 
@@ -36,7 +37,7 @@ if TYPE_CHECKING:
 
 
 @define
-class OpenAiChatPromptDriver(BasePromptDriver):
+class OpenAiChatPromptDriver(ClientMixin, BasePromptDriver):
     """OpenAI Chat Prompt Driver.
 
     Attributes:
@@ -55,12 +56,7 @@ class OpenAiChatPromptDriver(BasePromptDriver):
     base_url: Optional[str] = field(default=None, kw_only=True, metadata={"serializable": True})
     api_key: Optional[str] = field(default=None, kw_only=True, metadata={"serializable": False})
     organization: Optional[str] = field(default=None, kw_only=True, metadata={"serializable": True})
-    client: openai.OpenAI = field(
-        default=Factory(
-            lambda self: openai.OpenAI(api_key=self.api_key, base_url=self.base_url, organization=self.organization),
-            takes_self=True,
-        ),
-    )
+    client: openai.OpenAI = field(default=None, kw_only=True)
     model: str = field(kw_only=True, metadata={"serializable": True})
     tokenizer: BaseTokenizer = field(
         default=Factory(lambda self: OpenAiTokenizer(model=self.model), takes_self=True),
@@ -88,6 +84,9 @@ class OpenAiChatPromptDriver(BasePromptDriver):
         ),
         kw_only=True,
     )
+
+    def _build_client(self) -> openai.OpenAI:
+        return openai.OpenAI(api_key=self.api_key, base_url=self.base_url, organization=self.organization)
 
     @observable
     def try_run(self, prompt_stack: PromptStack) -> Message:
