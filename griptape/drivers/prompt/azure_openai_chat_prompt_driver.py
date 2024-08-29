@@ -6,13 +6,14 @@ import openai
 from attrs import Factory, define, field
 
 from griptape.drivers import OpenAiChatPromptDriver
+from griptape.mixins.client_mixin import ClientMixin
 
 if TYPE_CHECKING:
     from griptape.common import PromptStack
 
 
 @define
-class AzureOpenAiChatPromptDriver(OpenAiChatPromptDriver):
+class AzureOpenAiChatPromptDriver(ClientMixin[openai.AzureOpenAI], OpenAiChatPromptDriver):
     """Azure OpenAi Chat Prompt Driver.
 
     Attributes:
@@ -37,7 +38,6 @@ class AzureOpenAiChatPromptDriver(OpenAiChatPromptDriver):
         metadata={"serializable": False},
     )
     api_version: str = field(default="2023-05-15", kw_only=True, metadata={"serializable": True})
-    client: openai.AzureOpenAI = field(default=Factory(lambda self: self._client_factory(), takes_self=True), kw_only=True)
 
     def _required_client_parameters(self) -> list[Union[str, tuple[str]]]:
         return [
@@ -47,7 +47,7 @@ class AzureOpenAiChatPromptDriver(OpenAiChatPromptDriver):
             "api_version",
         ]
 
-    def _build_client(self) -> openai.AzureOpenAI:
+    def _default_client(self) -> openai.AzureOpenAI:
         return (
             openai.AzureOpenAI(
                 organization=self.organization,

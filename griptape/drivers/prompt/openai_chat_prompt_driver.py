@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 
 
 @define
-class OpenAiChatPromptDriver(ClientMixin, BasePromptDriver):
+class OpenAiChatPromptDriver(ClientMixin[openai.OpenAI], BasePromptDriver):
     """OpenAI Chat Prompt Driver.
 
     Attributes:
@@ -56,7 +56,6 @@ class OpenAiChatPromptDriver(ClientMixin, BasePromptDriver):
     base_url: Optional[str] = field(default=None, kw_only=True, metadata={"serializable": True})
     api_key: Optional[str] = field(default=None, kw_only=True, metadata={"serializable": False})
     organization: Optional[str] = field(default=None, kw_only=True, metadata={"serializable": True})
-    client: openai.OpenAI = field(default=None, kw_only=True)
     model: str = field(kw_only=True, metadata={"serializable": True})
     tokenizer: BaseTokenizer = field(
         default=Factory(lambda self: OpenAiTokenizer(model=self.model), takes_self=True),
@@ -85,7 +84,7 @@ class OpenAiChatPromptDriver(ClientMixin, BasePromptDriver):
         kw_only=True,
     )
 
-    def _build_client(self) -> openai.OpenAI:
+    def _default_client(self) -> openai.OpenAI:
         return openai.OpenAI(api_key=self.api_key, base_url=self.base_url, organization=self.organization)
 
     @observable
