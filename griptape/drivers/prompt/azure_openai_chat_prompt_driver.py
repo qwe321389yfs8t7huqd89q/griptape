@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 @define
-class AzureOpenAiChatPromptDriver(ClientMixin[openai.AzureOpenAI], OpenAiChatPromptDriver):
+class AzureOpenAiChatPromptDriver(OpenAiChatPromptDriver):
     """Azure OpenAi Chat Prompt Driver.
 
     Attributes:
@@ -28,24 +28,22 @@ class AzureOpenAiChatPromptDriver(ClientMixin[openai.AzureOpenAI], OpenAiChatPro
     azure_deployment: str = field(
         kw_only=True,
         default=Factory(lambda self: self.model, takes_self=True),
-        metadata={"serializable": True},
+        metadata={"serializable": True, "client_required": True},
     )
-    azure_endpoint: str = field(default=None, kw_only=True, metadata={"serializable": True})
-    azure_ad_token: Optional[str] = field(kw_only=True, default=None, metadata={"serializable": False})
+    azure_endpoint: str = field(default=None, kw_only=True, metadata={"serializable": True, "client_required": True})
+    azure_ad_token: Optional[str] = field(
+        kw_only=True,
+        default=None,
+        metadata={"serializable": False, "client_required": True, "client_param_group": "auth"},
+    )
     azure_ad_token_provider: Optional[Callable[[], str]] = field(
         kw_only=True,
         default=None,
-        metadata={"serializable": False},
+        metadata={"serializable": False, "client_required": True, "client_param_group": "auth"},
     )
-    api_version: str = field(default="2023-05-15", kw_only=True, metadata={"serializable": True})
-
-    def _required_client_parameters(self) -> list[Union[str, tuple[str]]]:
-        return [
-            "azure_deployment",
-            "azure_endpoint",
-            ("api_key", "azure_ad_token", "azure_ad_token_provider"),
-            "api_version",
-        ]
+    api_version: str = field(
+        default="2023-05-15", kw_only=True, metadata={"serializable": True, "client_required": True}
+    )
 
     def _default_client(self) -> openai.AzureOpenAI:
         return (
