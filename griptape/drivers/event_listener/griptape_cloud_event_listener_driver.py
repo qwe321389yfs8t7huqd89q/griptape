@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import os
 from typing import Optional
 from urllib.parse import urljoin
@@ -7,8 +8,12 @@ from urllib.parse import urljoin
 import requests
 from attrs import Attribute, Factory, define, field
 
-from griptape.drivers.event_listener.base_event_listener_driver import BaseEventListenerDriver
+from griptape.drivers.event_listener.base_event_listener_driver import (
+    BaseEventListenerDriver,
+)
 from griptape.events.base_event import BaseEvent
+
+logger = logging.getLogger(__name__)
 
 
 @define
@@ -68,7 +73,10 @@ class GriptapeCloudEventListenerDriver(BaseEventListenerDriver):
 
     def _post_event(self, json: list[dict] | dict) -> None:
         requests.post(
-            url=urljoin(self.base_url.strip("/"), f"/api/structure-runs/{self.structure_run_id}/events"),
+            url=urljoin(
+                self.base_url.strip("/"),
+                f"/api/structure-runs/{self.structure_run_id}/events",
+            ),
             json=json,
             headers=self.headers,
         ).raise_for_status()

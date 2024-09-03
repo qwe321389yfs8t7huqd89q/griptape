@@ -6,6 +6,7 @@ from attrs import define, field
 from schema import Schema
 
 from griptape.artifacts import ErrorArtifact, InfoArtifact, ListArtifact
+from griptape.artifacts.text_artifact import TextArtifact
 from griptape.tools import BaseTool
 from griptape.utils.decorators import activity
 
@@ -51,6 +52,6 @@ class SqlTool(BaseTool):
             return ErrorArtifact(f"error executing query: {e}")
 
         if len(rows) > 0:
-            return ListArtifact(rows)
+            return ListArtifact([TextArtifact(row.to_text()) for row in rows])
         else:
             return InfoArtifact("No results found")
