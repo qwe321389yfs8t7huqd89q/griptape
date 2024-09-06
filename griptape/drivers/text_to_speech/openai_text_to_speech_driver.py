@@ -7,6 +7,7 @@ from attrs import Factory, define, field
 
 from griptape.artifacts.audio_artifact import AudioArtifact
 from griptape.drivers import BaseTextToSpeechDriver
+from griptape.tokenizers import SimpleTokenizer
 
 
 @define
@@ -30,12 +31,20 @@ class OpenAiTextToSpeechDriver(BaseTextToSpeechDriver):
         ),
     )
 
-    def try_text_to_audio(self, prompts: list[str]) -> AudioArtifact:
-        response = self.client.audio.speech.create(
-            input=". ".join(prompts),
-            voice=self.voice,
-            model=self.model,
-            response_format=self.format,
-        )
-
-        return AudioArtifact(value=response.content, format=self.format)
+    def try_text_to_audio(self, prompts: list[str]) -> list[AudioArtifact]:
+        tokenizer = SimpleTokenizer(characters_per_token=self.max_characters)
+        # treat each set of characters of length max_characters as a "token"
+        prompt = self.prompt_separator.join(prompts)
+        num_tokens = tokenizer.count_tokens(prompt)
+        return [
+            AudioArtifact(
+                value=self.client.audio.speech.create(
+                    input=prompt[i * self.max_characters : (i + 1) * self.max_characters],
+                    voice=self.voice,
+                    model=self.model,
+                    response_format=self.format,
+                ).content,
+                format=self.format,
+            )
+            for i in range(0, num_tokens, 1)
+        ]
