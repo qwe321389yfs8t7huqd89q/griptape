@@ -5,21 +5,65 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## Unreleased
+
 ### Added
-- `BaseConversationMemory.prompt_driver` for use with autopruning. 
+- `BaseArtifact.to_bytes()` method to convert an Artifact's value to bytes.
+- `BlobArtifact.base64` property for converting a `BlobArtifact`'s value to a base64 string.
+- `CsvLoader`/`SqlLoader`/`DataframeLoader` `formatter_fn` field for customizing how SQL results are formatted into `TextArtifact`s.
+
+### Changed
+- **BREAKING**: Removed `CsvRowArtifact`. Use `TextArtifact` instead.
+- **BREAKING**: Removed `MediaArtifact`, use `ImageArtifact` or `AudioArtifact` instead.
+- **BREAKING**: `CsvLoader`, `DataframeLoader`, and `SqlLoader` now return `list[TextArtifact]`.
+- **BREAKING**: Removed `ImageArtifact.media_type`.
+- **BREAKING**: Removed `AudioArtifact.media_type`.
+- **BREAKING**: Removed `BlobArtifact.dir_name`.
+- **BREAKING**: Moved `ImageArtifact.prompt` and `ImageArtifact.model` into `ImageArtifact.meta`.
+- **BREAKING**: `ImageArtifact.format` is now required.
+- Updated `JsonArtifact` value converter to properly handle more types. 
+- `AudioArtifact` now subclasses `BlobArtifact` instead of `MediaArtifact`.
+- `ImageArtifact` now subclasses `BlobArtifact` instead of `MediaArtifact`.
+- Removed `__add__` method from `BaseArtifact`, implemented it where necessary.
 - Generic type support to `ListArtifact`.
 - Iteration support to `ListArtifact`.
 
+## [0.31.0] - 2024-09-03
+
+**Note**: This release includes breaking changes. Please refer to the [Migration Guide](./MIGRATION.md#030x-to-031x) for details.
+
+### Added
+- Parameter `meta: dict` on `BaseEvent`.
+- `AzureOpenAiTextToSpeechDriver`.
+- Ability to use Event Listeners as Context Managers for temporarily setting the Event Bus listeners.
+- `JsonSchemaRule` for instructing the LLM to output a JSON object that conforms to a schema.
+- Ability to use Drivers Configs as Context Managers for temporarily setting the default Drivers.
+
 ### Changed
-- **BREAKING**: Split `BaseExtractionEngine.extract` into `extract_text` and `extract_artifacts` for consistency with `BaseSummaryEngine`.
-- **BREAKING**: `BaseExtractionEngine` no longer catches exceptions and returns `ErrorArtifact`s.
-- **BREAKING**: `JsonExtractionEngine.template_schema` is now required.
-- **BREAKING**: `CsvExtractionEngine.column_names` is now required.
-- `JsonExtractionEngine.extract_artifacts` now returns a `ListArtifact[JsonArtifact]`.
-- `CsvExtractionEngine.extract_artifacts` now returns a `ListArtifact[CsvRowArtifact]`.
+- **BREAKING**: Drivers, Loaders, and Engines now raise exceptions rather than returning `ErrorArtifacts`.
+- **BREAKING**: Parameter `driver` on `BaseConversationMemory` renamed to `conversation_memory_driver`.
+- **BREAKING**: `BaseConversationMemory.add_to_prompt_stack` now takes a `prompt_driver` parameter.
+- **BREAKING**: `BaseConversationMemoryDriver.load` now returns `tuple[list[Run], dict]`. This represents the runs and metadata.
+- **BREAKING**: `BaseConversationMemoryDriver.store` now takes `runs: list[Run]` and `metadata: dict` as input.
+- **BREAKING**: Parameter `file_path` on `LocalConversationMemoryDriver` renamed to `persist_file` and is now type `Optional[str]`.
+- **BREAKING**: Removed the `__all__` declaration from the `griptape.mixins` module. 
+- `Defaults.drivers_config.conversation_memory_driver` now defaults to `LocalConversationMemoryDriver` instead of `None`.
+- `CsvRowArtifact.to_text()` now includes the header.
 
 ### Fixed
-- Parsing streaming response with some OpenAi compatible services.
+- Parsing streaming response with some OpenAI compatible services.
+- Issue in `PromptSummaryEngine` if there are no artifacts during recursive summarization.
+- Issue in `GooglePromptDriver` using Tools with no schema.
+- Missing `maxTokens` inference parameter in `AmazonBedrockPromptDriver`.
+- Incorrect model in `OpenAiDriverConfig`'s `text_to_speech_driver`.
+- Crash when using `CohereRerankDriver` with `CsvRowArtifact`s.
+- Crash when passing "empty" Artifacts or no Artifacts to `CohereRerankDriver`.
+
+
+## [0.30.2] - 2024-08-26
+
+### Fixed
+- Ensure thread safety when publishing events by adding a thread lock to batch operations in `BaseEventListenerDriver`. 
+- `FileManagerTool` failing to save Artifacts created by `ExtractionTool` with a `CsvExtractionEngine`.
 
 ## [0.30.1] - 2024-08-21
 
