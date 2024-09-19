@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Union
 
 from attrs import Factory, define, field
 
@@ -8,11 +8,20 @@ from griptape.artifacts.audio_artifact import AudioArtifact
 from griptape.drivers import BaseTextToSpeechDriver
 from griptape.utils import import_optional_dependency
 
+if TYPE_CHECKING:
+    import elevenlabs
+    import elevenlabs.client
+
 
 @define
 class ElevenLabsTextToSpeechDriver(BaseTextToSpeechDriver):
     api_key: str = field(kw_only=True, metadata={"serializable": True})
-    client: Any = field(
+    model: Union[str, elevenlabs.Model] = field(
+        default=None,
+        kw_only=True,
+        metadata={"serializable": True},
+    )
+    client: elevenlabs.client.ElevenLabs = field(
         default=Factory(
             lambda self: import_optional_dependency("elevenlabs.client").ElevenLabs(api_key=self.api_key),
             takes_self=True,
@@ -20,15 +29,26 @@ class ElevenLabsTextToSpeechDriver(BaseTextToSpeechDriver):
         kw_only=True,
         metadata={"serializable": True},
     )
-    voice: str = field(kw_only=True, metadata={"serializable": True})
+    voice: Union[str, elevenlabs.Voice] = field(
+        default=None,
+        kw_only=True,
+        metadata={"serializable": True},
+    )
     output_format: str = field(default="mp3_44100_128", kw_only=True, metadata={"serializable": True})
+    max_characters: int = field(default=10_000, kw_only=True, metadata={"serializable": True})
 
-    def try_text_to_audio(self, prompts: list[str]) -> AudioArtifact:
+    def try_text_to_audio(self, prompt: str) -> AudioArtifact:
+        kwargs = {}
+        if self.model is not None:
+            kwargs["model"] = self.model
+        if self.voice is not None:
+            kwargs["voice"] = self.voice
+        if self.output_format is not None:
+            kwargs["output_format"] = self.output_format
+
         audio = self.client.generate(
-            text=". ".join(prompts),
-            voice=self.voice,
-            model=self.model,
-            output_format=self.output_format,
+            text=prompt,
+            **kwargs,
         )
 
         content = b""
